@@ -23,16 +23,17 @@ defmodule SocialScribeWeb.AuthController do
         "provider" => "google"
       })
       when not is_nil(user) do
-    Logger.info("Google OAuth")
-    Logger.info(auth)
-
     case Accounts.find_or_create_user_credential(user, auth) do
       {:ok, _credential} ->
+        Logger.info("Google account connected for user #{user.id}")
+
         conn
         |> put_flash(:info, "Google account added successfully.")
         |> redirect(to: ~p"/dashboard/settings")
 
-      {:error, _reason} ->
+      {:error, reason} ->
+        Logger.error("Failed to connect Google account for user #{user.id}: #{inspect(reason)}")
+
         conn
         |> put_flash(:error, "Could not add Google account.")
         |> redirect(to: ~p"/dashboard/settings")
@@ -41,21 +42,18 @@ defmodule SocialScribeWeb.AuthController do
 
   def callback(%{assigns: %{ueberauth_auth: auth, current_user: user}} = conn, %{
         "provider" => "linkedin"
-      }) do
-    Logger.info("LinkedIn OAuth")
-    Logger.info(auth)
-
+      })
+      when not is_nil(user) do
     case Accounts.find_or_create_user_credential(user, auth) do
-      {:ok, credential} ->
-        Logger.info("credential")
-        Logger.info(credential)
+      {:ok, _credential} ->
+        Logger.info("LinkedIn account connected for user #{user.id}")
 
         conn
         |> put_flash(:info, "LinkedIn account added successfully.")
         |> redirect(to: ~p"/dashboard/settings")
 
       {:error, reason} ->
-        Logger.error(reason)
+        Logger.error("Failed to connect LinkedIn account for user #{user.id}: #{inspect(reason)}")
 
         conn
         |> put_flash(:error, "Could not add LinkedIn account.")
@@ -67,21 +65,19 @@ defmodule SocialScribeWeb.AuthController do
         "provider" => "facebook"
       })
       when not is_nil(user) do
-    Logger.info("Facebook OAuth")
-    Logger.info(auth)
-
     case Accounts.find_or_create_user_credential(user, auth) do
       {:ok, credential} ->
         case FacebookApi.fetch_user_pages(credential.uid, credential.token) do
           {:ok, facebook_pages} ->
-            facebook_pages
-            |> Enum.each(fn page ->
+            Enum.each(facebook_pages, fn page ->
               Accounts.link_facebook_page(user, credential, page)
             end)
 
           _ ->
             :ok
         end
+
+        Logger.info("Facebook account connected for user #{user.id}")
 
         conn
         |> put_flash(
@@ -90,7 +86,9 @@ defmodule SocialScribeWeb.AuthController do
         )
         |> redirect(to: ~p"/dashboard/settings/facebook_pages")
 
-      {:error, _reason} ->
+      {:error, reason} ->
+        Logger.error("Failed to connect Facebook account for user #{user.id}: #{inspect(reason)}")
+
         conn
         |> put_flash(:error, "Could not add Facebook account.")
         |> redirect(to: ~p"/dashboard/settings")
@@ -101,9 +99,6 @@ defmodule SocialScribeWeb.AuthController do
         "provider" => "hubspot"
       })
       when not is_nil(user) do
-    Logger.info("HubSpot OAuth")
-    Logger.info(inspect(auth))
-
     hub_id = to_string(auth.uid)
 
     credential_attrs = %{
@@ -135,18 +130,15 @@ defmodule SocialScribeWeb.AuthController do
     end
   end
 
+  # Handles initial sign-in via Google OAuth (user not yet logged in)
   def callback(%{assigns: %{ueberauth_auth: auth}} = conn, _params) do
-    Logger.info("Google OAuth Login")
-    Logger.info(auth)
-
     case Accounts.find_or_create_user_from_oauth(auth) do
       {:ok, user} ->
-        conn
-        |> UserAuth.log_in_user(user)
+        Logger.info("User #{user.id} signed in via #{auth.provider}")
+        UserAuth.log_in_user(conn, user)
 
       {:error, reason} ->
-        Logger.info("error")
-        Logger.info(reason)
+        Logger.error("OAuth sign-in failed (provider: #{auth.provider}): #{inspect(reason)}")
 
         conn
         |> put_flash(:error, "There was an error signing you in.")
@@ -154,10 +146,16 @@ defmodule SocialScribeWeb.AuthController do
     end
   end
 
-  def callback(conn, _params) do
-    Logger.error("OAuth Login")
-    Logger.error(conn)
+  # Fallback: Ueberauth returned an error (e.g., user denied access)
+  def callback(%{assigns: %{ueberauth_failure: failure}} = conn, _params) do
+    Logger.warning("OAuth failure: #{inspect(failure)}")
 
+    conn
+    |> put_flash(:error, "There was an error signing you in. Please try again.")
+    |> redirect(to: ~p"/")
+  end
+
+  def callback(conn, _params) do
     conn
     |> put_flash(:error, "There was an error signing you in. Please try again.")
     |> redirect(to: ~p"/")
