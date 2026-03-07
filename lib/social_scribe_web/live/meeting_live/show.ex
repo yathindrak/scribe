@@ -23,6 +23,7 @@ defmodule SocialScribeWeb.MeetingLive.Show do
       |> Kernel.>(0)
 
     automation_results = Automations.list_automation_results_for_meeting(meeting_id)
+    timezone = get_connect_params(socket)["timezone"] || "UTC"
 
     if meeting.calendar_event.user_id != socket.assigns.current_user.id do
       socket =
@@ -43,6 +44,7 @@ defmodule SocialScribeWeb.MeetingLive.Show do
         |> assign(:user_has_automations, user_has_automations)
         |> assign(:hubspot_credential, hubspot_credential)
         |> assign(:salesforce_credential, salesforce_credential)
+        |> assign(:timezone, timezone)
         |> assign(
           :follow_up_email_form,
           to_form(%{
@@ -158,6 +160,15 @@ defmodule SocialScribeWeb.MeetingLive.Show do
   # Add a new clause here when integrating a new CRM.
   defp crm_modules(:hubspot), do: {HubspotApi, HubspotSuggestions, "hubspot-modal", "HubSpot"}
   defp crm_modules(:salesforce), do: {SalesforceApi, SalesforceSuggestions, "salesforce-modal", "Salesforce"}
+
+  defp format_recorded_at(nil, _tz), do: "N/A"
+
+  defp format_recorded_at(dt, timezone) do
+    case Timex.Timezone.convert(dt, timezone) do
+      {:error, _} -> Timex.format!(dt, "{Mshort} {D}, {YYYY} {h12}:{m}{AM} UTC")
+      local -> Timex.format!(local, "{Mshort} {D}, {YYYY} {h12}:{m}{AM}")
+    end
+  end
 
   defp format_duration(nil), do: "N/A"
 

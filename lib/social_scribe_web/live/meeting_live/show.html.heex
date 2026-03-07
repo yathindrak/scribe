@@ -11,7 +11,7 @@
   </h1>
   <div class="text-sm text-slate-500 mb-6">
     <p>
-      Recorded: {@meeting.recorded_at}
+      Recorded: {format_recorded_at(@meeting.recorded_at, @timezone)}
     </p>
     <p>Duration: {format_duration(@meeting.duration_seconds)}</p>
     <p>
