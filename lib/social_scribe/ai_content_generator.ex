@@ -69,6 +69,8 @@ defmodule SocialScribe.AIContentGenerator do
 
         IMPORTANT: Only extract information that is EXPLICITLY mentioned in the transcript. Do not infer or guess.
 
+        IMPORTANT: For phone numbers, always convert spoken words to digits. For example, "one two three four" → "1234", "five five five" → "555".
+
         The transcript includes timestamps in [MM:SS] format at the start of each line.
 
         Return your response as a JSON array of objects. Each object should have:
@@ -101,6 +103,61 @@ defmodule SocialScribe.AIContentGenerator do
     end
   end
 
+  @impl SocialScribe.AIContentGeneratorApi
+  def generate_salesforce_suggestions(meeting) do
+    case Meetings.generate_prompt_for_meeting(meeting) do
+      {:error, reason} ->
+        {:error, reason}
+
+      {:ok, meeting_prompt} ->
+        prompt = """
+        You are an AI assistant that extracts contact information updates from meeting transcripts.
+
+        Analyze the following meeting transcript and extract any information that could be used to update a Salesforce Contact record.
+
+        Look for mentions of:
+        - Phone numbers (Phone)
+        - Mobile phone numbers (MobilePhone)
+        - Email addresses (Email)
+        - Job title/role (Title)
+        - Department (Department)
+        - Mailing address details (MailingStreet, MailingCity, MailingState, MailingPostalCode, MailingCountry)
+
+        IMPORTANT: Only extract information that is EXPLICITLY mentioned in the transcript. Do not infer or guess.
+
+        IMPORTANT: For phone numbers, always convert spoken words to digits. For example, "one two three four" → "1234", "five five five" → "555".
+
+        The transcript includes timestamps in [MM:SS] format at the start of each line.
+
+        Return your response as a JSON array of objects. Each object should have:
+        - "field": the Salesforce field API name (use exactly: Phone, MobilePhone, Email, Title, Department, MailingStreet, MailingCity, MailingState, MailingPostalCode, MailingCountry)
+        - "value": the extracted value
+        - "context": a brief quote of where this was mentioned
+        - "timestamp": the timestamp in MM:SS format where this was mentioned
+
+        If no contact information updates are found, return an empty array: []
+
+        Example response format:
+        [
+          {"field": "MobilePhone", "value": "555-123-4567", "context": "John mentioned 'you can reach me at five five five...'", "timestamp": "01:23"},
+          {"field": "Title", "value": "VP of Sales", "context": "Sarah introduced herself as VP of Sales", "timestamp": "00:45"}
+        ]
+
+        ONLY return valid JSON, no other text.
+
+        Meeting transcript:
+        #{meeting_prompt}
+        """
+
+        case call_gemini(prompt) do
+          {:ok, response} ->
+            parse_ai_json_suggestions(response)
+
+          {:error, reason} ->
+            {:error, reason}
+        end
+    end
+  end
 
   defp parse_ai_json_suggestions(response) do
     cleaned =

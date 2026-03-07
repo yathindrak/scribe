@@ -130,6 +130,42 @@ defmodule SocialScribeWeb.AuthController do
     end
   end
 
+  def callback(%{assigns: %{ueberauth_auth: auth, current_user: user}} = conn, %{
+        "provider" => "salesforce"
+      })
+      when not is_nil(user) do
+    instance_url = auth.extra.raw_info.instance_url
+
+    credential_attrs = %{
+      user_id: user.id,
+      provider: "salesforce",
+      uid: to_string(auth.uid),
+      token: auth.credentials.token,
+      refresh_token: auth.credentials.refresh_token,
+      expires_at:
+        (auth.credentials.expires_at && DateTime.from_unix!(auth.credentials.expires_at)) ||
+          DateTime.add(DateTime.utc_now(), 7200, :second),
+      email: auth.info.email,
+      instance_url: instance_url
+    }
+
+    case Accounts.find_or_create_salesforce_credential(user, credential_attrs) do
+      {:ok, _credential} ->
+        Logger.info("Salesforce account connected for user #{user.id}")
+
+        conn
+        |> put_flash(:info, "Salesforce account connected successfully!")
+        |> redirect(to: ~p"/dashboard/settings")
+
+      {:error, reason} ->
+        Logger.error("Failed to save Salesforce credential: #{inspect(reason)}")
+
+        conn
+        |> put_flash(:error, "Could not connect Salesforce account.")
+        |> redirect(to: ~p"/dashboard/settings")
+    end
+  end
+
   # Handles initial sign-in via Google OAuth (user not yet logged in)
   def callback(%{assigns: %{ueberauth_auth: auth}} = conn, _params) do
     case Accounts.find_or_create_user_from_oauth(auth) do

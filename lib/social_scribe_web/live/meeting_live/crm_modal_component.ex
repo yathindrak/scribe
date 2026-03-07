@@ -123,11 +123,11 @@ defmodule SocialScribeWeb.MeetingLive.CrmModalComponent do
   defp crm_config(:salesforce), do: %{
     title: "Update in Salesforce",
     crm_label: "Salesforce",
-    submit_class: "bg-blue-600 hover:bg-blue-700"
+    submit_class: "bg-salesforce-button hover:bg-salesforce-button-hover"
   }
 
   defp crm_info_text(:hubspot, count), do: "1 object, #{count} fields in 1 integration selected to update"
-  defp crm_info_text(:salesforce, count), do: "1 contact, #{count} fields selected to update"
+  defp crm_info_text(:salesforce, count), do: "1 object, #{count} fields in 1 integration selected to update"
 
   defp maybe_select_all_suggestions(socket, %{suggestions: suggestions}) when is_list(suggestions) do
     assign(socket, suggestions: Enum.map(suggestions, &Map.put(&1, :apply, true)))
