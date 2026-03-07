@@ -93,7 +93,7 @@ defmodule SocialScribe.AIContentGenerator do
 
         case call_gemini(prompt) do
           {:ok, response} ->
-            parse_hubspot_suggestions(response)
+            parse_ai_json_suggestions(response)
 
           {:error, reason} ->
             {:error, reason}
@@ -101,8 +101,8 @@ defmodule SocialScribe.AIContentGenerator do
     end
   end
 
-  defp parse_hubspot_suggestions(response) do
-    # Clean up the response - remove markdown code blocks if present
+
+  defp parse_ai_json_suggestions(response) do
     cleaned =
       response
       |> String.trim()
@@ -131,7 +131,6 @@ defmodule SocialScribe.AIContentGenerator do
         {:ok, []}
 
       {:error, _} ->
-        # If JSON parsing fails, return empty suggestions
         {:ok, []}
     end
   end
