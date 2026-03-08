@@ -117,13 +117,13 @@ defmodule SocialScribeWeb.MeetingLive.CrmModalComponent do
   defp crm_config(:hubspot), do: %{
     title: "Update in HubSpot",
     crm_label: "HubSpot",
-    submit_class: "bg-hubspot-button hover:bg-hubspot-button-hover"
+    submit_class: "bg-crm-btn hover:bg-crm-btn-hover"
   }
 
   defp crm_config(:salesforce), do: %{
     title: "Update in Salesforce",
     crm_label: "Salesforce",
-    submit_class: "bg-salesforce-button hover:bg-salesforce-button-hover"
+    submit_class: "bg-crm-btn hover:bg-crm-btn-hover"
   }
 
   defp crm_info_text(:hubspot, count), do: "1 object, #{count} fields in 1 integration selected to update"

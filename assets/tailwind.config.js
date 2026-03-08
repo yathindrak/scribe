@@ -15,6 +15,8 @@ module.exports = {
     extend: {
       colors: {
         brand: "#FD4F00",
+        "crm-btn": "#00B669",
+        "crm-btn-hover": "#009A59",
         hubspot: {
           overlay: "#B1B1B1",
           card: "#f5f8f7",
@@ -28,8 +30,6 @@ module.exports = {
           hide: "#676B70",
           "hide-hover": "#565A5E",
           cancel: "#151515",
-          button: "#00B669",
-          "button-hover": "#009A59",
           arrow: "#BBBCBB",
           avatar: "#C6CCD1",
           "avatar-text": "#0C1216",
