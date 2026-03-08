@@ -49,6 +49,12 @@ if System.get_env("PHX_SERVER") do
   config :social_scribe, SocialScribeWeb.Endpoint, server: true
 end
 
+if config_env() == :dev && System.get_env("DATABASE_URL") do
+  config :social_scribe, SocialScribe.Repo,
+    url: System.get_env("DATABASE_URL"),
+    pool_size: 10
+end
+
 if config_env() == :prod do
   database_url =
     System.get_env("DATABASE_URL") ||
