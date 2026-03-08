@@ -11,13 +11,23 @@ defmodule SocialScribeWeb.HomeLive do
   def mount(_params, _session, socket) do
     if connected?(socket), do: send(self(), :sync_calendars)
 
+    timezone = get_connect_params(socket)["timezone"] || "UTC"
+
     socket =
       socket
       |> assign(:page_title, "Upcoming Meetings")
       |> assign(:events, Calendar.list_upcoming_events(socket.assigns.current_user))
       |> assign(:loading, true)
+      |> assign(:timezone, timezone)
 
     {:ok, socket}
+  end
+
+  defp format_event_time(dt, timezone) do
+    case Timex.Timezone.convert(dt, timezone) do
+      {:error, _} -> Timex.format!(dt, "%m/%d/%Y, %H:%M", :strftime) <> " UTC"
+      local -> Timex.format!(local, "%m/%d/%Y, %H:%M", :strftime)
+    end
   end
 
   @impl true
