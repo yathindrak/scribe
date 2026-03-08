@@ -14,7 +14,17 @@ defmodule SocialScribe.Recall do
          {"Authorization", "Token #{api_key}"},
          {"Content-Type", "application/json"},
          {"Accept", "application/json"}
-       ]}
+       ]},
+      {Tesla.Middleware.Retry,
+       delay: 500,
+       max_retries: 3,
+       max_delay: 10_000,
+       use_retry_after_header: true,
+       should_retry: fn
+         {:ok, %Tesla.Env{status: status}}, _env, _ctx when status in [429, 503] -> true
+         {:ok, _}, _env, _ctx -> false
+         {:error, _}, _env, _ctx -> true
+       end}
     ])
   end
 
@@ -62,7 +72,19 @@ defmodule SocialScribe.Recall do
          [%{id: recording_id} | _] <- Map.get(bot_info, :recordings, []),
          {:ok, %{body: recording}} <- get_recording(recording_id),
          url when is_binary(url) <- get_in(recording, [:media_shortcuts, :transcript, :data, :download_url]) do
-      Tesla.client([{Tesla.Middleware.JSON, engine_opts: [keys: :atoms]}])
+      Tesla.client([
+        {Tesla.Middleware.JSON, engine_opts: [keys: :atoms]},
+        {Tesla.Middleware.Retry,
+         delay: 500,
+         max_retries: 3,
+         max_delay: 10_000,
+         use_retry_after_header: true,
+         should_retry: fn
+           {:ok, %Tesla.Env{status: status}}, _env, _ctx when status in [429, 503] -> true
+           {:ok, _}, _env, _ctx -> false
+           {:error, _}, _env, _ctx -> true
+         end}
+      ])
       |> Tesla.get(url)
     else
       [] -> {:error, :no_recordings}
@@ -81,7 +103,19 @@ defmodule SocialScribe.Recall do
          [%{id: recording_id} | _] <- Map.get(bot_info, :recordings, []),
          {:ok, %{body: recording}} <- get_recording(recording_id),
          url when is_binary(url) <- get_participants_url(recording) do
-      Tesla.client([{Tesla.Middleware.JSON, engine_opts: [keys: :atoms]}])
+      Tesla.client([
+        {Tesla.Middleware.JSON, engine_opts: [keys: :atoms]},
+        {Tesla.Middleware.Retry,
+         delay: 500,
+         max_retries: 3,
+         max_delay: 10_000,
+         use_retry_after_header: true,
+         should_retry: fn
+           {:ok, %Tesla.Env{status: status}}, _env, _ctx when status in [429, 503] -> true
+           {:ok, _}, _env, _ctx -> false
+           {:error, _}, _env, _ctx -> true
+         end}
+      ])
       |> Tesla.get(url)
     else
       [] -> {:error, :no_recordings}

@@ -62,7 +62,17 @@ defmodule SocialScribe.Facebook do
   defp client do
     Tesla.client([
       {Tesla.Middleware.BaseUrl, @base_url},
-      Tesla.Middleware.JSON
+      Tesla.Middleware.JSON,
+      {Tesla.Middleware.Retry,
+       delay: 500,
+       max_retries: 3,
+       max_delay: 10_000,
+       use_retry_after_header: true,
+       should_retry: fn
+         {:ok, %Tesla.Env{status: status}}, _env, _ctx when status in [429, 503] -> true
+         {:ok, _}, _env, _ctx -> false
+         {:error, _}, _env, _ctx -> true
+       end}
     ])
   end
 end
