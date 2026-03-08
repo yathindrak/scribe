@@ -55,7 +55,7 @@ defmodule SocialScribe.SalesforceTokenRefresher do
           token: response["access_token"],
           # Salesforce refresh responses include instance_url; keep existing if absent
           instance_url: response["instance_url"] || credential.instance_url,
-          expires_at: DateTime.add(DateTime.utc_now(), 7200, :second)
+          expires_at: DateTime.add(DateTime.utc_now(), response["expires_in"] || 7200, :second)
         }
 
         Accounts.update_user_credential(credential, attrs)

@@ -5,7 +5,7 @@ defmodule SocialScribe.HubspotSuggestions do
   """
 
   alias SocialScribe.AIContentGeneratorApi
-  alias SocialScribe.HubspotApi
+  alias SocialScribe.HubspotApiBehaviour
   alias SocialScribe.Accounts.UserCredential
 
   @field_labels %{
@@ -38,7 +38,7 @@ defmodule SocialScribe.HubspotSuggestions do
   - apply: boolean indicating whether to apply this update (default false)
   """
   def generate_suggestions(%UserCredential{} = credential, contact_id, meeting) do
-    with {:ok, contact} <- HubspotApi.get_contact(credential, contact_id),
+    with {:ok, contact} <- HubspotApiBehaviour.get_contact(credential, contact_id),
          {:ok, ai_suggestions} <- AIContentGeneratorApi.generate_hubspot_suggestions(meeting) do
       suggestions =
         ai_suggestions
@@ -53,7 +53,7 @@ defmodule SocialScribe.HubspotSuggestions do
             new_value: suggestion.value,
             context: suggestion.context,
             apply: true,
-            has_change: current_value != suggestion.value
+            has_change: values_differ?(current_value, suggestion.value)
           }
         end)
         |> Enum.filter(fn s -> s.has_change end)
@@ -98,18 +98,41 @@ defmodule SocialScribe.HubspotSuggestions do
     Enum.map(suggestions, fn suggestion ->
       current_value = get_contact_field(contact, suggestion.field)
 
-      %{suggestion | current_value: current_value, has_change: current_value != suggestion.new_value, apply: true}
+      %{suggestion | current_value: current_value, has_change: values_differ?(current_value, suggestion.new_value), apply: true}
     end)
     |> Enum.filter(fn s -> s.has_change end)
   end
 
+  @field_to_atom %{
+    "firstname" => :firstname,
+    "lastname" => :lastname,
+    "email" => :email,
+    "phone" => :phone,
+    "mobilephone" => :mobilephone,
+    "company" => :company,
+    "jobtitle" => :jobtitle,
+    "address" => :address,
+    "city" => :city,
+    "state" => :state,
+    "zip" => :zip,
+    "country" => :country,
+    "website" => :website,
+    "linkedin_url" => :linkedin_url,
+    "twitter_handle" => :twitter_handle
+  }
+
   defp get_contact_field(contact, field) when is_map(contact) do
-    # Convert string field to atom for map access
-    field_atom = String.to_existing_atom(field)
-    Map.get(contact, field_atom)
-  rescue
-    ArgumentError -> nil
+    case Map.get(@field_to_atom, field) do
+      nil -> nil
+      atom -> Map.get(contact, atom)
+    end
   end
 
   defp get_contact_field(_, _), do: nil
+
+  defp values_differ?(a, b) when is_binary(a) and is_binary(b) do
+    String.downcase(String.trim(a)) != String.downcase(String.trim(b))
+  end
+
+  defp values_differ?(a, b), do: a != b
 end
