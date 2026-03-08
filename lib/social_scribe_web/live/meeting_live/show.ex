@@ -149,7 +149,7 @@ defmodule SocialScribeWeb.MeetingLive.Show do
         send_update(SocialScribeWeb.MeetingLive.CrmModalComponent,
           id: modal_id,
           error: "Failed to update contact: #{inspect(reason)}",
-          loading: false
+          updating: false
         )
 
         {:noreply, socket}

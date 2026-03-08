@@ -35,6 +35,7 @@ defmodule SocialScribeWeb.MeetingLive.CrmModalComponent do
         <.suggestions_section
           suggestions={@suggestions}
           loading={@loading}
+          updating={@updating}
           myself={@myself}
           patch={@patch}
           crm_config={@crm_config}
@@ -47,6 +48,7 @@ defmodule SocialScribeWeb.MeetingLive.CrmModalComponent do
 
   attr :suggestions, :list, required: true
   attr :loading, :boolean, required: true
+  attr :updating, :boolean, required: true
   attr :myself, :any, required: true
   attr :patch, :string, required: true
   attr :crm_config, :map, required: true
@@ -57,34 +59,40 @@ defmodule SocialScribeWeb.MeetingLive.CrmModalComponent do
 
     ~H"""
     <div class="space-y-4">
-      <%= if @loading do %>
-        <div class="text-center py-8 text-slate-500">
-          <.icon name="hero-arrow-path" class="h-6 w-6 animate-spin mx-auto mb-2" />
-          <p>Generating suggestions...</p>
-        </div>
-      <% else %>
-        <%= if Enum.empty?(@suggestions) do %>
-          <.empty_state
-            message="No update suggestions found from this meeting."
-            submessage="The AI didn't detect any new contact information in the transcript."
-          />
-        <% else %>
-          <form phx-submit="apply_updates" phx-change="toggle_suggestion" phx-target={@myself}>
-            <div class="space-y-4 max-h-[60vh] overflow-y-auto pr-2">
-              <.suggestion_card :for={suggestion <- @suggestions} suggestion={suggestion} />
-            </div>
-
-            <.modal_footer
-              cancel_patch={@patch}
-              submit_text={"Update #{@crm_config.crm_label}"}
-              submit_class={@crm_config.submit_class}
-              disabled={@selected_count == 0}
-              loading={@loading}
-              loading_text="Updating..."
-              info_text={crm_info_text(@crm, @selected_count)}
+      <%= cond do %>
+        <% @loading -> %>
+          <div class="text-center py-8 text-slate-500">
+            <.icon name="hero-arrow-path" class="h-6 w-6 animate-spin mx-auto mb-2" />
+            <p>Generating suggestions...</p>
+          </div>
+        <% @updating -> %>
+          <div class="text-center py-8 text-slate-500">
+            <.icon name="hero-arrow-path" class="h-6 w-6 animate-spin mx-auto mb-2" />
+            <p>Updating...</p>
+          </div>
+        <% true -> %>
+          <%= if Enum.empty?(@suggestions) do %>
+            <.empty_state
+              message="No update suggestions found from this meeting."
+              submessage="The AI didn't detect any new contact information in the transcript."
             />
-          </form>
-        <% end %>
+          <% else %>
+            <form phx-submit="apply_updates" phx-change="toggle_suggestion" phx-target={@myself}>
+              <div class="space-y-4 max-h-[60vh] overflow-y-auto pr-2">
+                <.suggestion_card :for={suggestion <- @suggestions} suggestion={suggestion} />
+              </div>
+
+              <.modal_footer
+                cancel_patch={@patch}
+                submit_text={"Update #{@crm_config.crm_label}"}
+                submit_class={@crm_config.submit_class}
+                disabled={@selected_count == 0}
+                loading={@updating}
+                loading_text="Updating..."
+                info_text={crm_info_text(@crm, @selected_count)}
+              />
+            </form>
+          <% end %>
       <% end %>
     </div>
     """
@@ -106,6 +114,7 @@ defmodule SocialScribeWeb.MeetingLive.CrmModalComponent do
       |> assign_new(:selected_contact, fn -> nil end)
       |> assign_new(:suggestions, fn -> [] end)
       |> assign_new(:loading, fn -> false end)
+      |> assign_new(:updating, fn -> false end)
       |> assign_new(:searching, fn -> false end)
       |> assign_new(:dropdown_open, fn -> false end)
       |> assign_new(:error, fn -> nil end)
@@ -200,6 +209,7 @@ defmodule SocialScribeWeb.MeetingLive.CrmModalComponent do
        selected_contact: nil,
        suggestions: [],
        loading: false,
+       updating: false,
        searching: false,
        dropdown_open: false,
        contacts: [],
@@ -232,7 +242,7 @@ defmodule SocialScribeWeb.MeetingLive.CrmModalComponent do
 
   @impl true
   def handle_event("apply_updates", %{"apply" => selected, "values" => values}, socket) do
-    socket = assign(socket, loading: true, error: nil)
+    socket = assign(socket, updating: true, error: nil)
 
     updates =
       selected
