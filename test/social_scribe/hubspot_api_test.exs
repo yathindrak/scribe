@@ -1,80 +1,334 @@
 defmodule SocialScribe.HubspotApiTest do
   use SocialScribe.DataCase
 
-  alias SocialScribe.HubspotApi
-
+  import Tesla.Mock
   import SocialScribe.AccountsFixtures
 
-  describe "format_contact/1" do
-    test "formats a HubSpot contact response correctly" do
-      # Test the internal formatting by checking apply_updates with empty list
-      user = user_fixture()
-      credential = hubspot_credential_fixture(%{user_id: user.id})
+  alias SocialScribe.HubspotApi
 
-      # apply_updates with empty list should return :no_updates
-      {:ok, :no_updates} = HubspotApi.apply_updates(credential, "123", [])
+  defp valid_credential(user_id) do
+    hubspot_credential_fixture(%{
+      user_id: user_id,
+      token: "valid_hs_token",
+      expires_at: DateTime.add(DateTime.utc_now(), 3600, :second)
+    })
+  end
+
+  describe "search_contacts/2" do
+    test "returns formatted contacts on success" do
+      user = user_fixture()
+      credential = valid_credential(user.id)
+
+      mock(fn %{method: :post, url: url} ->
+        assert String.contains?(url, "/crm/v3/objects/contacts/search")
+
+        {:ok,
+         %Tesla.Env{
+           status: 200,
+           body: %{
+             "results" => [
+               %{
+                 "id" => "1",
+                 "properties" => %{
+                   "firstname" => "Alice",
+                   "lastname" => "Smith",
+                   "email" => "alice@example.com",
+                   "phone" => "555-1234",
+                   "mobilephone" => nil,
+                   "company" => "Acme",
+                   "jobtitle" => "Engineer",
+                   "address" => nil,
+                   "city" => nil,
+                   "state" => nil,
+                   "zip" => nil,
+                   "country" => nil,
+                   "website" => nil,
+                   "hs_linkedin_url" => nil,
+                   "twitterhandle" => nil
+                 }
+               }
+             ]
+           }
+         }}
+      end)
+
+      assert {:ok, [contact]} = HubspotApi.search_contacts(credential, "Alice")
+      assert contact.id == "1"
+      assert contact.firstname == "Alice"
+      assert contact.display_name == "Alice Smith"
     end
 
-    test "apply_updates/3 filters only updates with apply: true" do
+    test "uses email as display_name when name is blank" do
       user = user_fixture()
-      credential = hubspot_credential_fixture(%{user_id: user.id})
+      credential = valid_credential(user.id)
+
+      mock(fn %{method: :post} ->
+        {:ok,
+         %Tesla.Env{
+           status: 200,
+           body: %{
+             "results" => [
+               %{
+                 "id" => "2",
+                 "properties" => %{
+                   "firstname" => "",
+                   "lastname" => "",
+                   "email" => "no-name@example.com",
+                   "phone" => nil,
+                   "mobilephone" => nil,
+                   "company" => nil,
+                   "jobtitle" => nil,
+                   "address" => nil,
+                   "city" => nil,
+                   "state" => nil,
+                   "zip" => nil,
+                   "country" => nil,
+                   "website" => nil,
+                   "hs_linkedin_url" => nil,
+                   "twitterhandle" => nil
+                 }
+               }
+             ]
+           }
+         }}
+      end)
+
+      assert {:ok, [contact]} = HubspotApi.search_contacts(credential, "no-name")
+      assert contact.display_name == "no-name@example.com"
+    end
+
+    test "returns {:error, {:api_error, status, body}} on non-200" do
+      user = user_fixture()
+      credential = valid_credential(user.id)
+
+      mock(fn %{method: :post} ->
+        {:ok, %Tesla.Env{status: 403, body: %{"message" => "Forbidden"}}}
+      end)
+
+      assert {:error, {:api_error, 403, _}} = HubspotApi.search_contacts(credential, "query")
+    end
+
+    test "returns {:error, {:http_error, reason}} on connection failure" do
+      user = user_fixture()
+      credential = valid_credential(user.id)
+
+      mock(fn %{method: :post} -> {:error, :econnrefused} end)
+
+      assert {:error, {:http_error, :econnrefused}} =
+               HubspotApi.search_contacts(credential, "query")
+    end
+  end
+
+  describe "get_contact/2" do
+    test "returns formatted contact on success" do
+      user = user_fixture()
+      credential = valid_credential(user.id)
+
+      mock(fn %{method: :get, url: url} ->
+        assert String.contains?(url, "/crm/v3/objects/contacts/abc123")
+
+        {:ok,
+         %Tesla.Env{
+           status: 200,
+           body: %{
+             "id" => "abc123",
+             "properties" => %{
+               "firstname" => "Bob",
+               "lastname" => "Jones",
+               "email" => "bob@example.com",
+               "phone" => nil,
+               "mobilephone" => nil,
+               "company" => nil,
+               "jobtitle" => nil,
+               "address" => nil,
+               "city" => nil,
+               "state" => nil,
+               "zip" => nil,
+               "country" => nil,
+               "website" => nil,
+               "hs_linkedin_url" => nil,
+               "twitterhandle" => nil
+             }
+           }
+         }}
+      end)
+
+      assert {:ok, contact} = HubspotApi.get_contact(credential, "abc123")
+      assert contact.id == "abc123"
+      assert contact.firstname == "Bob"
+    end
+
+    test "returns {:error, :not_found} on 404" do
+      user = user_fixture()
+      credential = valid_credential(user.id)
+
+      mock(fn %{method: :get} ->
+        {:ok, %Tesla.Env{status: 404, body: %{"message" => "Not found"}}}
+      end)
+
+      assert {:error, :not_found} = HubspotApi.get_contact(credential, "missing")
+    end
+
+    test "returns {:error, {:api_error, status, body}} on other errors" do
+      user = user_fixture()
+      credential = valid_credential(user.id)
+
+      mock(fn %{method: :get} ->
+        {:ok, %Tesla.Env{status: 500, body: %{"message" => "Internal error"}}}
+      end)
+
+      assert {:error, {:api_error, 500, _}} = HubspotApi.get_contact(credential, "id")
+    end
+  end
+
+  describe "update_contact/3" do
+    test "returns formatted contact on success" do
+      user = user_fixture()
+      credential = valid_credential(user.id)
+
+      mock(fn %{method: :patch, url: url} ->
+        assert String.contains?(url, "/crm/v3/objects/contacts/c1")
+
+        {:ok,
+         %Tesla.Env{
+           status: 200,
+           body: %{
+             "id" => "c1",
+             "properties" => %{
+               "firstname" => "Alice",
+               "lastname" => "Updated",
+               "email" => "alice@example.com",
+               "phone" => "999-0000",
+               "mobilephone" => nil,
+               "company" => nil,
+               "jobtitle" => nil,
+               "address" => nil,
+               "city" => nil,
+               "state" => nil,
+               "zip" => nil,
+               "country" => nil,
+               "website" => nil,
+               "hs_linkedin_url" => nil,
+               "twitterhandle" => nil
+             }
+           }
+         }}
+      end)
+
+      assert {:ok, contact} = HubspotApi.update_contact(credential, "c1", %{"phone" => "999-0000"})
+      assert contact.phone == "999-0000"
+    end
+
+    test "returns {:error, :not_found} on 404" do
+      user = user_fixture()
+      credential = valid_credential(user.id)
+
+      mock(fn %{method: :patch} ->
+        {:ok, %Tesla.Env{status: 404, body: %{}}}
+      end)
+
+      assert {:error, :not_found} =
+               HubspotApi.update_contact(credential, "missing", %{"phone" => "123"})
+    end
+  end
+
+  describe "apply_updates/3" do
+    test "returns {:ok, :no_updates} when list is empty" do
+      user = user_fixture()
+      credential = valid_credential(user.id)
+
+      assert {:ok, :no_updates} = HubspotApi.apply_updates(credential, "123", [])
+    end
+
+    test "returns {:ok, :no_updates} when all updates have apply: false" do
+      user = user_fixture()
+      credential = valid_credential(user.id)
 
       updates = [
         %{field: "phone", new_value: "555-1234", apply: false},
         %{field: "email", new_value: "test@example.com", apply: false}
       ]
 
-      {:ok, :no_updates} = HubspotApi.apply_updates(credential, "123", updates)
+      assert {:ok, :no_updates} = HubspotApi.apply_updates(credential, "123", updates)
+    end
+
+    test "calls update_contact for updates with apply: true" do
+      user = user_fixture()
+      credential = valid_credential(user.id)
+
+      mock(fn %{method: :patch} ->
+        {:ok,
+         %Tesla.Env{
+           status: 200,
+           body: %{
+             "id" => "c99",
+             "properties" => %{
+               "firstname" => nil,
+               "lastname" => nil,
+               "email" => "new@example.com",
+               "phone" => nil,
+               "mobilephone" => nil,
+               "company" => nil,
+               "jobtitle" => nil,
+               "address" => nil,
+               "city" => nil,
+               "state" => nil,
+               "zip" => nil,
+               "country" => nil,
+               "website" => nil,
+               "hs_linkedin_url" => nil,
+               "twitterhandle" => nil
+             }
+           }
+         }}
+      end)
+
+      updates = [
+        %{field: "email", new_value: "new@example.com", apply: true},
+        %{field: "phone", new_value: "555", apply: false}
+      ]
+
+      assert {:ok, contact} = HubspotApi.apply_updates(credential, "c99", updates)
+      assert contact.email == "new@example.com"
     end
   end
 
-  describe "search_contacts/2" do
-    test "requires a valid credential" do
+  describe "token refresh retry logic" do
+    test "retries after BAD_CLIENT_ID error and returns token_refresh_failed when refresh fails" do
       user = user_fixture()
+      credential = valid_credential(user.id)
 
-      # Create credential with expired token to test token refresh path
-      credential =
-        hubspot_credential_fixture(%{
-          user_id: user.id,
-          expires_at: DateTime.add(DateTime.utc_now(), 3600, :second)
-        })
+      mock(fn env ->
+        cond do
+          String.contains?(env.url, "/crm/v3/objects/contacts/search") ->
+            {:ok,
+             %Tesla.Env{
+               status: 400,
+               body: %{"status" => "BAD_CLIENT_ID", "message" => "bad client id"}
+             }}
 
-      # The actual API call will fail without valid HubSpot credentials
-      # but we can verify the function accepts the correct arguments
-      assert is_struct(credential)
-      assert credential.provider == "hubspot"
+          String.contains?(env.url, "/oauth/v1/token") ->
+            {:ok, %Tesla.Env{status: 400, body: %{"error" => "invalid_client"}}}
+
+          true ->
+            {:error, :unexpected_url}
+        end
+      end)
+
+      assert {:error, {:token_refresh_failed, _}} =
+               HubspotApi.search_contacts(credential, "test")
     end
-  end
 
-  describe "get_contact/2" do
-    test "requires a valid credential and contact_id" do
+    test "does not retry on non-token 403 errors" do
       user = user_fixture()
+      credential = valid_credential(user.id)
 
-      credential =
-        hubspot_credential_fixture(%{
-          user_id: user.id,
-          expires_at: DateTime.add(DateTime.utc_now(), 3600, :second)
-        })
+      mock(fn %{method: :post, url: url} ->
+        assert String.contains?(url, "/crm/v3/objects/contacts/search")
+        {:ok, %Tesla.Env{status: 403, body: %{"message" => "Access denied"}}}
+      end)
 
-      # Verify the function signature is correct
-      assert is_struct(credential)
-      assert credential.provider == "hubspot"
-    end
-  end
-
-  describe "update_contact/3" do
-    test "requires a valid credential, contact_id, and updates map" do
-      user = user_fixture()
-
-      credential =
-        hubspot_credential_fixture(%{
-          user_id: user.id,
-          expires_at: DateTime.add(DateTime.utc_now(), 3600, :second)
-        })
-
-      # Verify the function signature is correct
-      assert is_struct(credential)
-      assert credential.provider == "hubspot"
+      assert {:error, {:api_error, 403, _}} = HubspotApi.search_contacts(credential, "test")
     end
   end
 end

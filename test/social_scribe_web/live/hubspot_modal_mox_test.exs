@@ -57,10 +57,6 @@ defmodule SocialScribeWeb.HubspotModalMoxTest do
       |> element("input[phx-keyup='contact_search']")
       |> render_keyup(%{"value" => "John"})
 
-      # Wait for async update
-      :timer.sleep(200)
-
-      # Re-render to see updates
       html = render(view)
 
       # Verify contacts are displayed
@@ -79,8 +75,6 @@ defmodule SocialScribeWeb.HubspotModalMoxTest do
       view
       |> element("input[phx-keyup='contact_search']")
       |> render_keyup(%{"value" => "Test"})
-
-      :timer.sleep(200)
 
       html = render(view)
 
@@ -125,14 +119,14 @@ defmodule SocialScribeWeb.HubspotModalMoxTest do
       |> element("input[phx-keyup='contact_search']")
       |> render_keyup(%{"value" => "John"})
 
-      :timer.sleep(200)
+      render(view)
 
       # Select the contact (it's a button, not li)
       view
       |> element("button[phx-click='select_contact'][phx-value-id='123']")
       |> render_click()
 
-      :timer.sleep(500)
+      render(view)
 
       # After selecting contact, suggestions should be generated
       # Modal should still be present
@@ -160,8 +154,6 @@ defmodule SocialScribeWeb.HubspotModalMoxTest do
       view
       |> element("input[phx-keyup='contact_search']")
       |> render_keyup(%{"value" => "Test"})
-
-      :timer.sleep(200)
 
       html = render(view)
 
