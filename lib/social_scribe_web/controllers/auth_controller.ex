@@ -182,7 +182,20 @@ defmodule SocialScribeWeb.AuthController do
     end
   end
 
-  # Fallback: Ueberauth returned an error (e.g., user denied access)
+  # Fallback: Ueberauth returned an error for a logged-in user (e.g., connecting a social account)
+  def callback(
+        %{assigns: %{ueberauth_failure: failure, current_user: user}} = conn,
+        %{"provider" => provider}
+      )
+      when not is_nil(user) do
+    Logger.warning("OAuth failure: #{inspect(failure)}")
+
+    conn
+    |> put_flash(:error, "Could not connect #{provider} account. Please try again.")
+    |> redirect(to: ~p"/dashboard/settings")
+  end
+
+  # Fallback: Ueberauth returned an error (e.g., user denied access during sign-in)
   def callback(%{assigns: %{ueberauth_failure: failure}} = conn, _params) do
     Logger.warning("OAuth failure: #{inspect(failure)}")
 
