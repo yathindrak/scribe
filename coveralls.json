@@ -1,0 +1,19 @@
+{
+  "skip_files": [
+    "lib/social_scribe_web/telemetry.ex",
+    "lib/social_scribe_web/gettext.ex",
+    "lib/social_scribe_web/endpoint.ex",
+    "lib/social_scribe_web/components/core_components.ex",
+    "lib/social_scribe_web/components/layouts.ex",
+    "lib/social_scribe/release.ex",
+    "lib/social_scribe/mailer.ex",
+    "lib/social_scribe/repo.ex",
+    "lib/social_scribe.ex",
+    "lib/social_scribe_web.ex",
+    "lib/ueberauth/strategy/hubspot.ex",
+    "lib/ueberauth/strategy/hubspot/oauth.ex",
+    "lib/ueberauth/strategy/salesforce.ex",
+    "lib/ueberauth/strategy/salesforce/oauth.ex",
+    "lib/social_scribe_web/components/clipboard_button.ex"
+  ]
+}
