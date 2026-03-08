@@ -9,15 +9,15 @@ defmodule SocialScribe.Integration.MeetingPipelineTest do
 
   Covered flows
   -------------
-  1. Recording pipeline
+  Recording pipeline
      Google Calendar sync → Recall.ai bot dispatch → BotStatusPoller
      (transcript + participants) → AIContentGenerationWorker (email draft)
 
-  2. Salesforce CRM
+  Salesforce CRM
      Contact search → AI suggestions from transcript → merge with contact
      data → apply updates back to Salesforce
 
-  3. HubSpot CRM
+  HubSpot CRM
      Same flow as Salesforce, exercising the HubSpot-specific modules
 
   NOT covered here — LinkedIn & Facebook
@@ -52,9 +52,7 @@ defmodule SocialScribe.Integration.MeetingPipelineTest do
   alias SocialScribe.SalesforceApiMock
   alias SocialScribe.HubspotApiMock
 
-  # ---------------------------------------------------------------------------
   # Shared fixture data
-  # ---------------------------------------------------------------------------
 
   @google_meet_event %{
     "id" => "pipeline-meet-event-001",
@@ -83,9 +81,7 @@ defmodule SocialScribe.Integration.MeetingPipelineTest do
 
   @generated_email "Subject: Follow-up\n\nHi Team, great chat!"
 
-  # ---------------------------------------------------------------------------
-  # 1. Recording pipeline
-  # ---------------------------------------------------------------------------
+  # Recording pipeline
 
   describe "recording pipeline" do
     setup :verify_on_exit!
@@ -177,11 +173,9 @@ defmodule SocialScribe.Integration.MeetingPipelineTest do
     end
   end
 
-  # ---------------------------------------------------------------------------
-  # 2. Salesforce CRM flow
+  # Salesforce CRM flow
   # User-triggered from the meeting show page:
   #   search contacts → AI suggestions → merge with contact → apply updates
-  # ---------------------------------------------------------------------------
 
   @mock_sf_contact %{
     id: "003SALESFORCE001",
@@ -327,10 +321,8 @@ defmodule SocialScribe.Integration.MeetingPipelineTest do
     end
   end
 
-  # ---------------------------------------------------------------------------
-  # 3. HubSpot CRM flow
+  # HubSpot CRM flow
   # Same user-triggered path as Salesforce but through HubSpot modules.
-  # ---------------------------------------------------------------------------
 
   @mock_hs_contact %{
     id: "hs-contact-001",
