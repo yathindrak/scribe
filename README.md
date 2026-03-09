@@ -63,14 +63,8 @@ Both integrations share the same generic `CrmModalComponent` and follow the same
 * **Login With Google and Meetings Sync:**
     ![Login With Google](readme_assets/sign_in_with_google.png)
 
-* **Automation Configuration UI:**
-    ![Automation Configuration](readme_assets/edit_automation.png)
-
-* **Facebook Page Selection:**
-    ![Facebook Page Selection](readme_assets/select_fb_page.png)
-
-* **Facebook / LinkedIn Post:**
-    ![Facebook / LinkedIn Post](readme_assets/draft-fb-post.png)
+* **Salesforce API Not Enabled Error for Unsupported Editions:**
+    ![Salesforce API Not Enabled](readme_assets/salesforce_api_not_enabled.png)
 
 * **Dashboard View:**
     ![Dashboard View](readme_assets/dashboard_view.png)
@@ -84,6 +78,14 @@ Both integrations share the same generic `CrmModalComponent` and follow the same
 * **Update in Salesforce:**
     ![Update in Salesforce](readme_assets/update_in_salesforce.png)
 
+* **Automation Configuration UI:**
+    ![Automation Configuration](readme_assets/edit_automation.png)
+
+* **Facebook Page Selection:**
+    ![Facebook Page Selection](readme_assets/select_fb_page.png)
+
+* **Facebook / LinkedIn Post:**
+    ![Facebook / LinkedIn Post](readme_assets/draft-fb-post.png)
 ---
 
 ## Tech Stack
@@ -323,7 +325,7 @@ Or set them individually via `fly secrets set KEY=value`.
 ## Identified Limitations
 
 - **Google Meet sign-in restriction** — If the meeting was created by a Google Workspace (institutional) account with "Only signed-in users can join" enforced, the Recall.ai bot will be rejected with a `meeting_requires_sign_in` error. This is a Google Meet policy restriction; the bot joins anonymously by default and cannot bypass org-level authentication requirements.
-- **Salesforce edition requirement** — The Salesforce REST API is only available on **Developer, Enterprise, Unlimited, and Performance** editions. Starter/Essentials and Group editions block all API access with an `API_DISABLED_FOR_ORG` error — this cannot be configured away. For testing, use a free [Salesforce Developer Edition](https://www.salesforce.com/products/free-trial/developer/) org which includes full REST API access. This is a Salesforce licensing restriction confirmed in their [official documentation](https://developer.salesforce.com/docs/atlas.en-us.api_rest.meta/api_rest/intro_rest_compatible_editions.htm).
+- **Salesforce edition requirement** — The Salesforce REST API is only available on **Developer, Enterprise, Unlimited, and Performance** editions. Starter/Essentials and Group editions block all API access with an `API_DISABLED_FOR_ORG` error — this cannot be configured away. The app surfaces a clear error message in this case (see [screenshot](readme_assets/salesforce_api_not_enabled.png)). For testing, use a free [Salesforce Developer Edition](https://www.salesforce.com/products/free-trial/developer/) org which includes full REST API access. This is a Salesforce licensing restriction confirmed in their [official documentation](https://developer.salesforce.com/docs/atlas.en-us.api_rest.meta/api_rest/intro_rest_compatible_editions.htm).
 - **Facebook app review** — Posting to Facebook Pages works for app admins/testers without Meta's app review. Broader access requires Business Verification through Meta.
 - **Calendar event parsing** — Only events with a `hangoutLink` or a `location` containing a Zoom URL are synced. Other meeting platforms are not yet supported.
 - **Automation prompt templating** — Basic string substitution; a more capable templating engine (EEx or similar) would be a future improvement.
