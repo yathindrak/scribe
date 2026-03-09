@@ -188,7 +188,7 @@ defmodule SocialScribeWeb.AuthController do
         %{"provider" => provider}
       )
       when not is_nil(user) do
-    Logger.warning("OAuth failure: #{inspect(failure)}")
+    Logger.warning("OAuth failure for #{provider} (user #{user.id}): #{inspect(failure, pretty: true)}")
 
     conn
     |> put_flash(:error, "Could not connect #{provider} account. Please try again.")

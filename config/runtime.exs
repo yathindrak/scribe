@@ -28,6 +28,8 @@ config :ueberauth, Ueberauth.Strategy.LinkedIn.OAuth,
   client_secret: System.get_env("LINKEDIN_CLIENT_SECRET"),
   redirect_uri: System.get_env("LINKEDIN_REDIRECT_URI")
 
+config :oauth2, debug: true
+
 config :ueberauth, Ueberauth.Strategy.Facebook.OAuth,
   client_id: System.get_env("FACEBOOK_CLIENT_ID"),
   client_secret: System.get_env("FACEBOOK_CLIENT_SECRET"),
