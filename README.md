@@ -78,6 +78,9 @@ Both integrations share the same generic `CrmModalComponent` and follow the same
 * **Update in Salesforce:**
     ![Update in Salesforce](readme_assets/update_in_salesforce.png)
 
+* **Hide / Show Suggestion Details:**
+    ![Hide Show Details](readme_assets/hide_show_details.png)
+
 * **Automation Configuration UI:**
     ![Automation Configuration](readme_assets/edit_automation.png)
 
@@ -245,7 +248,9 @@ The landing page CTA is now auth-aware: authenticated users see a "Go to Dashboa
 
 **Bug fix — invalid loading state on CRM update modal:** the original HubSpot modal shared a single `loading` flag across two distinct async phases, causing the "Generating suggestions..." spinner to incorrectly appear when the update was being submitted. When the Salesforce integration was added it inherited the same bug. Fixed by introducing a separate `updating` state so that selecting a contact shows "Generating suggestions..." and submitting the form shows "Updating...", each only for their respective phase. The fix applies to both via the shared `CrmModalComponent`.
 
-Meeting times are now rendered in the user's local timezone rather than always showing UTC. The CRM modal submit button was unified to a single shared colour across both HubSpot and Salesforce rather than maintaining per-CRM overrides.
+Meeting times are now rendered in the user's local timezone rather than always showing UTC. The CRM modal submit button was unified to a single shared colour across both HubSpot and Salesforce rather than maintaining per-CRM overrides. 
+
+The "Hide details" button on suggestion cards now correctly toggles the detail section and updates its label to "Show details" / "Hide details" — previously the button was rendered but had no click handler.
 
 ### Test suite
 

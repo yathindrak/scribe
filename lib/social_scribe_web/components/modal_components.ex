@@ -358,13 +358,22 @@ defmodule SocialScribeWeb.ModalComponents do
           >
             1 update selected
           </span>
-          <button type="button" class="text-xs text-hubspot-hide hover:text-hubspot-hide-hover font-medium">
-            Hide details
+          <button
+            type="button"
+            phx-click={
+              JS.toggle(to: "#suggestion-details-#{@suggestion.field}")
+              |> JS.toggle(to: "#suggestion-hide-#{@suggestion.field}")
+              |> JS.toggle(to: "#suggestion-show-#{@suggestion.field}")
+            }
+            class="text-xs text-hubspot-hide hover:text-hubspot-hide-hover font-medium"
+          >
+            <span id={"suggestion-hide-#{@suggestion.field}"}>Hide details</span>
+            <span id={"suggestion-show-#{@suggestion.field}"} class="hidden">Show details</span>
           </button>
         </div>
       </div>
 
-      <div class="mt-2 pl-8">
+      <div id={"suggestion-details-#{@suggestion.field}"} class="mt-2 pl-8">
         <div class="text-sm font-medium text-slate-700 leading-5 ml-1">{@suggestion.label}</div>
 
         <div class="relative mt-2">
