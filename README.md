@@ -239,9 +239,11 @@ Building the Salesforce integration surfaced several inconsistencies in the exis
 
 ### UI and frontend polish
 
-Meeting times are now rendered in the user's local timezone rather than always showing UTC. The CRM modal submit button was unified to a single shared colour across both HubSpot and Salesforce rather than maintaining per-CRM overrides.
+The landing page CTA is now auth-aware: authenticated users see a "Go to Dashboard" button that routes directly to the dashboard, while guests see the original "Get Started for Free" button linking to Google sign-in. Previously, the button always triggered Google OAuth regardless of login state.
 
 **Bug fix — invalid loading state on CRM update modal:** the original HubSpot modal shared a single `loading` flag across two distinct async phases, causing the "Generating suggestions..." spinner to incorrectly appear when the update was being submitted. When the Salesforce integration was added it inherited the same bug. Fixed by introducing a separate `updating` state so that selecting a contact shows "Generating suggestions..." and submitting the form shows "Updating...", each only for their respective phase. The fix applies to both via the shared `CrmModalComponent`.
+
+Meeting times are now rendered in the user's local timezone rather than always showing UTC. The CRM modal submit button was unified to a single shared colour across both HubSpot and Salesforce rather than maintaining per-CRM overrides.
 
 ### Test suite
 
@@ -321,6 +323,7 @@ Or set them individually via `fly secrets set KEY=value`.
 ## Identified Limitations
 
 - **Google Meet sign-in restriction** — If the meeting was created by a Google Workspace (institutional) account with "Only signed-in users can join" enforced, the Recall.ai bot will be rejected with a `meeting_requires_sign_in` error. This is a Google Meet policy restriction; the bot joins anonymously by default and cannot bypass org-level authentication requirements.
+- **Salesforce edition requirement** — The Salesforce REST API is only available on **Developer, Enterprise, Unlimited, and Performance** editions. Starter/Essentials and Group editions block all API access with an `API_DISABLED_FOR_ORG` error — this cannot be configured away. For testing, use a free [Salesforce Developer Edition](https://www.salesforce.com/products/free-trial/developer/) org which includes full REST API access. This is a Salesforce licensing restriction confirmed in their [official documentation](https://developer.salesforce.com/docs/atlas.en-us.api_rest.meta/api_rest/intro_rest_compatible_editions.htm).
 - **Facebook app review** — Posting to Facebook Pages works for app admins/testers without Meta's app review. Broader access requires Business Verification through Meta.
 - **Calendar event parsing** — Only events with a `hangoutLink` or a `location` containing a Zoom URL are synced. Other meeting platforms are not yet supported.
 - **Automation prompt templating** — Basic string substitution; a more capable templating engine (EEx or similar) would be a future improvement.
