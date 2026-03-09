@@ -85,6 +85,27 @@ defmodule SocialScribeWeb.UserSettingsLive do
   end
 
   @impl true
+  def handle_event("disconnect_credential", %{"id" => id}, socket) do
+    credential = Accounts.get_user_credential!(String.to_integer(id))
+
+    case Accounts.delete_user_credential(credential) do
+      {:ok, _} ->
+        provider = credential.provider
+        updated_accounts = Accounts.list_user_credentials(socket.assigns.current_user, provider: provider)
+
+        socket =
+          socket
+          |> put_flash(:info, "#{String.capitalize(provider)} account disconnected.")
+          |> assign(String.to_existing_atom("#{provider}_accounts"), updated_accounts)
+
+        {:noreply, socket}
+
+      {:error, _} ->
+        {:noreply, put_flash(socket, :error, "Failed to disconnect account.")}
+    end
+  end
+
+  @impl true
   def handle_event("validate", params, socket) do
     {:noreply, assign(socket, :form, to_form(params))}
   end

@@ -23,7 +23,7 @@
         No processed meetings yet
       </h3>
       <p class="mt-1 text-sm text-slate-500 ">
-        Once your recorded meetings are processed, they will appear here.
+        Once your recorded meetings are processed, they will appear here. Try refreshing in a bit!
       </p>
     </div>
   <% end %>
@@ -38,7 +38,13 @@
                 {meeting.title}
                 <.platform_logo recall_bot={meeting.recall_bot} class="size-6" />
               </h3>
-              <p class="text-sm text-slate-500 ">
+              <p
+                class="text-sm text-slate-500 "
+                phx-hook="LocalTime"
+                id={"meeting-time-#{meeting.id}"}
+                data-utc={meeting.recorded_at && DateTime.to_iso8601(meeting.recorded_at)}
+                data-prefix="Recorded: "
+              >
                 Recorded: {format_recorded_at(meeting.recorded_at, @timezone)}
               </p>
               <p class="text-xs text-slate-400 ">

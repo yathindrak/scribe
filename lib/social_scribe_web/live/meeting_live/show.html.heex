@@ -10,7 +10,12 @@
     <.platform_logo recall_bot={@meeting.recall_bot} class="size-10" />
   </h1>
   <div class="text-sm text-slate-500 mb-6">
-    <p>
+    <p
+      phx-hook="LocalTime"
+      id="meeting-show-time"
+      data-utc={@meeting.recorded_at && DateTime.to_iso8601(@meeting.recorded_at)}
+      data-prefix="Recorded: "
+    >
       Recorded: {format_recorded_at(@meeting.recorded_at, @timezone)}
     </p>
     <p>Duration: {format_duration(@meeting.duration_seconds)}</p>

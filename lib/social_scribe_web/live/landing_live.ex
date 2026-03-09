@@ -18,10 +18,10 @@ defmodule SocialScribeWeb.LandingLive do
           Social Scribe automatically transcribes your meetings, generates insightful follow-up emails, and crafts engaging social media posts. Save time, amplify your message.
         </p>
         <.link
-          href={~p"/auth/google"}
+          href={if @current_user, do: ~p"/dashboard", else: ~p"/auth/google"}
           class="bg-white text-purple-700 font-bold py-4 px-10 rounded-lg shadow-xl hover:bg-slate-100 transition duration-300 ease-in-out transform hover:scale-105 text-lg"
         >
-          Get Started for Free
+          {if @current_user, do: "Go to Dashboard", else: "Get Started for Free"}
         </.link>
         <p class="mt-6 text-sm text-slate-400">Connect your Google Calendar to begin.</p>
       </div>

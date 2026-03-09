@@ -95,6 +95,13 @@ defmodule SocialScribeWeb.MeetingLive.Show do
           searching: false
         )
 
+      {:error, {:api_error, 403, [%{"errorCode" => "API_DISABLED_FOR_ORG"} | _]}} ->
+        send_update(SocialScribeWeb.MeetingLive.CrmModalComponent,
+          id: modal_id,
+          error: "Salesforce REST API is not enabled for this org. Your Salesforce account must be Developer, Enterprise, Unlimited, or Performance edition.",
+          searching: false
+        )
+
       {:error, reason} ->
         send_update(SocialScribeWeb.MeetingLive.CrmModalComponent,
           id: modal_id,
